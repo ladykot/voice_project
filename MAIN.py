@@ -12,7 +12,7 @@ def say(text_to_speech):
     sp.call(['say', text_to_speech])
 
 def main():
-        say('hello. welcome to voice assistant. Do you have any trouble? Say yes or no.') # произносится 1 раз в начале
+    say('hello. welcome to voice assistant. Do you have any trouble? Say yes or no.') # произносится 1 раз в начале
     while True:  # бесконечный цикл диалога
         rec = sr.Recognizer()
         mic = sr.Microphone()
