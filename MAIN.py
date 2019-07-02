@@ -5,6 +5,7 @@ import subprocess as sp
 
 replies = {
     "yes": "Do you want to drink?",
+    "no": "Do you want to eat?",
     "enough": "if you need anything, call me. good bye!"
 }
 
@@ -20,11 +21,14 @@ def main():
             rec.adjust_for_ambient_noise(source)
             audio = rec.listen(source)
             speech_to_text = rec.recognize_google(audio)
-        if speech_to_text == "enough":  # выход из цикла
+        for reply in replies:  # перебираем варианты ответов
+            if reply == speech_to_text == "yes":           # если ответ "да" или "нет", цикл продолжаем
+                say(replies.get('no'))
+            elif reply == speech_to_text == "no":
+                say(replies.get('yes'))
+        if speech_to_text == "enough":  # выход из цикла while
             say(replies.get("enough"))
             break
-        elif speech_to_text == "yes" or "no":  # если ответ "да" или "нет", цикл продолжаем
-            say(replies.get('yes'))
 
 
 if __name__ == '__main__':
