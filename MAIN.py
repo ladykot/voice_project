@@ -3,11 +3,12 @@
 import speech_recognition as sr
 import subprocess as sp
 
-replies = {
-    "yes": "Do you want to drink?",
-    "no": "Do you want to eat?",
+rreplies = {
+    "yes/no": "Do you want to drink?",
     "enough": "if you need anything, call me. good bye!"
-}
+}   # сочетания ответ-вопрос
+
+choices = ['yes', 'no', 'enough']  # варианты ответов пациента
 
 def say(text_to_speech):
     sp.call(['say', text_to_speech])
@@ -21,12 +22,9 @@ def main():
             rec.adjust_for_ambient_noise(source)
             audio = rec.listen(source)
             speech_to_text = rec.recognize_google(audio)
-        for reply in replies:  # перебираем варианты ответов
-            if reply == speech_to_text == "yes":           # если ответ "да" или "нет", цикл продолжаем
-                say(replies.get('no'))
-            elif reply == speech_to_text == "no":
-                say(replies.get('yes'))
-        if speech_to_text == "enough":  # выход из цикла while
+        if speech_to_text == choices[0] or speech_to_text == choices[1]:  # сопоставляем ответы со списокм choices
+                say(replies.get('yes/no'))  # если ответ "да" или "нет", цикл продолжаем
+        elif speech_to_text == choices[2]:  # выход из цикла while
             say(replies.get("enough"))
             break
 
