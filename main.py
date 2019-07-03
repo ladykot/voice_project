@@ -3,7 +3,6 @@ import configparser
 import os
 import requests
 import subprocess
-import time
 
 import simpleaudio as sa
 import speech_recognition as sr
@@ -87,7 +86,6 @@ def main():
         subprocess.call(["say", "-v", "Milena", replies.get(recognize_text.lower())])
         if recognize_text == "я все":
             signal()
-            time.sleep(1.7)  # необходимое время для выполнения signal()
             break
 
 
