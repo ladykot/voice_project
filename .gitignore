@@ -104,4 +104,8 @@ venv.bak/
 .mypy_cache/
 
 main_proto.py
-info.txt
+config_token.py
+
+# iam_token settings
+.ini
+settings.py
