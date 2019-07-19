@@ -3,11 +3,9 @@ import json
 import logging
 import requests
 
-import datetime
-from datetime import timedelta
-
 
 PATH = 'settings.ini'
+URL_REC = "https://stt.api.cloud.yandex.net/speech/v1/stt:recognize"
 
 
 def read_config(name_settings):
@@ -20,24 +18,6 @@ def read_config(name_settings):
     config = configparser.ConfigParser()
     config.read(PATH)
     return config.get('Settings', name_settings)
-
-
-def check_time(iam_token):
-    """ функция проверки срока действия iam_token
-
-    :return True, если время вышло
-
-    """
-
-    datetime_token = datetime.datetime.strptime(read_config("expires_iam_token"),
-                                                '%Y-%m-%dT%H:%M:%S.%fZ')
-    datetime_today = datetime.datetime.today()
-    delta12 = timedelta(hours=12)  # генерируем продолжительность в 12 часов
-    continue_time = datetime_today - datetime_token
-    if continue_time >= delta12:
-        return None
-    else:
-        return iam_token
 
 
 def write_ini(name_settings, name):
@@ -55,20 +35,33 @@ def write_ini(name_settings, name):
 
 
 def create_token():
-    """ Функция проверяет срок iam_token по .ini,
-    генерирует и записывает новый токен и дату его смерти в .ini,
-    если срок текущего токена истек:
+    """ Функция проверяет срок iam_token.
+    Если при попытке аторизации c настоящим токеном приходит ошибка,
+    то генерируется новый iam_token и записывается в .ini
 
-    if срок check_time(iam_token) прошел (True):
-        :return iam_new (str)
+    if text.get("error_code") is not 'UNAUTHORIZED':
+        :return iam_token (str)
     else:
-        :return iam_token
+        :return iam_new (str
 
     """
     iam_token = read_config('iam_token')  # читаем iam_token из .ini
-    check_time(iam_token)
+    id_folder = read_config('id_folder')
+    headers = {'Authorization': 'Bearer ' + iam_token}  # iam_token >> headers
+    params = {
+        'lang': 'ru-RU',
+        'folderId': id_folder,
+        'sampleRateHertz': 48000,
+    }
+    response = requests.post(URL_REC, params=params, headers=headers)  # отправка post-запроса на проверку
+    decode_resp = response.content.decode('UTF-8')  # декодируем
+    text = json.loads(decode_resp)  # загружаем в json
 
-    if check_time(iam_token) is None:  # если пришло время, генерим новый токен и записывавем его в .ini
+    if text.get("error_code") is not 'UNAUTHORIZED':
+        logging.info('Срок действия токена еще не истек')
+        return iam_token
+
+    else:
         logging.info('Время iam_token истекло. Отправка запроса ...')
         oauth_token = read_config("oauth_token")  # прочитали oauth_token из конфига
         params = {
@@ -83,12 +76,12 @@ def create_token():
 
         write_ini('iam_token', iam_new)  # запись токена в .ini
         write_ini('expires_iam_token', expires_iam_token)  # запись даты смерти iam_token в .ini
-        logging.info("А вот и Милена")
+        logging.info("Новый iam_token успешно сгенерирован. "
+                     f"Срок жизни: до {expires_iam_token}")
         return iam_new
-    else:
-        logging.info('Токен еще жив, а вот и Милена ...')
-        return iam_token
 
 
 if __name__ == '__main__':
+    # iam_token = read_config('iam_token')  # читаем iam_token из .ini
+    # print(iam_token)
     create_token()
