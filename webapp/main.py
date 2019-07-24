@@ -7,14 +7,15 @@ import simpleaudio as sa
 import speech_recognition as sr
 from pydub import AudioSegment
 
-from create_token import create_token, read_config
+from сreate_token_copy import create_token, read_config
+
 
 REPLIES = OrderedDict([
-    ("У вас что-то болит?", ("доктор принесёт лекарство", "принести обезболивающее")),
-    ("Вы хотите в туалет?", ("медсестра уже идёт к вам на помощь", "помочь с туалетом")),
-    ("Вы хотите пить ?", ("медсестра позаботится о вас, ожидайте", "дать питье")),
-    ("Вы хотите поговорить с родными?", ("я уже решаю этот вопрос", "найти родных")),
-    ("Вы хотите продолжить диалог?", "хорошо, попробуем снова")
+    ("Болит у вас что-нибудь?", ("доктор принесёт лекарство", "Принести обезболивающее")),
+    ("Хотите в туалет?", ("медсестра уже идёт к вам на помощь", "Помочь с туалетом")),
+    ("Хотите пить?", ("медсестра позаботится о вас, ожидайте", "Дать питьё")),
+    ("Желаете поговорить с родными?", ("я уже решаю этот вопрос", "Найти родных")),
+    ("Продолжим диалог?", ("хорошо, попробуем снова",))
     ])
 
 tasks_list = [value[1] for value in REPLIES.values() if len(value) == 2]  # список задач по порядку
@@ -23,7 +24,7 @@ tasks_order = OrderedDict([])
 URL_REC = "https://stt.api.cloud.yandex.net/speech/v1/stt:recognize"
 URL_SYN = 'https://tts.api.cloud.yandex.net/speech/v1/tts:synthesize'
 
-logging.basicConfig(filename="sample.log", level=logging.INFO, datefmt=True)
+logging.basicConfig(filename="sample.log", level=logging.INFO)
 
 
 def milena(iam_token, id_folder, text):
@@ -32,11 +33,11 @@ def milena(iam_token, id_folder, text):
     :param iam_token: (str) <-- create_token()
     :param id_folder: (str) <-- read_config()
     :param text: (str)
-    :return:
+    :return: sync.wav
     """
 
     headers = {
-        'Authorization': 'Bearer ' + iam_token,
+        'Authorization': f'Bearer {iam_token}',
     }
 
     data = {
@@ -44,7 +45,7 @@ def milena(iam_token, id_folder, text):
         'lang': 'ru-RU',
         'folderId': id_folder,
         'speed': 1.0,
-        'emotion': 'good'
+        'emotion': 'neutral'
     }
 
     resp = requests.post(URL_SYN, headers=headers, data=data, stream=True)  # делаем запрос на синтез текста
@@ -77,7 +78,7 @@ def recognize(data_sound, iam_token, id_folder):
     text = json.loads(decode_resp)  # загружаем в json
     if text.get('error_code') is None:
         text = text.get('result')  # забираем текст из json по ключу result
-        print(text)
+        print(f'Пациент .. {text}')
     else:
         print(text.get('error_code'))
         logging.debug('Милена недоступна. Попробуйте позже')
@@ -111,7 +112,7 @@ def dialogue(iam_token, id_folder):
             with sr.Microphone() as source:  # слушаем ответ пациента
                 recognizer.adjust_for_ambient_noise(source,
                                                     duration=0.3)  # настройка микрофона
-                data = recognizer.listen(source, phrase_time_limit=20)  # записываем ответ пациента
+                data = recognizer.listen(source, )  # записываем ответ пациента
                 data_sound = data.get_flac_data()  # ответ -> flac
                 recognize_text = recognize(data_sound, iam_token, id_folder)  # распознавание ответа
 
@@ -123,26 +124,52 @@ def dialogue(iam_token, id_folder):
 
             elif recognize_text == 'да':
                 milena(iam_token, id_folder, REPLIES[question][0])  # ответ -- значение по словарю
+                if question == list(REPLIES.items())[-1][0]:
+                    continue
                 tasks_order[question] = REPLIES[question][1]
-                continue
-
-            # else:
-            #     milena('Прошу вас отвечать словами "да" или "нет"')  # нужно вернуться к копросу
 
 
 def main_dialogue():
+    """ Функция разговора пациента с пощником
+
+    :return: tasks_order (dict): {'question': 'task'}
+    """
     iam_token = create_token()  # генерируем токен ПЕРЕД диалогом
     id_folder = read_config('id_folder')  # читаем с конфига id_folder
     signal('Harp 1.wav')
-    milena(iam_token, id_folder, 'добро пожаловать!, Я ваш робот-медсестра. Отвечайте -- Д+а -- или-Нет')
+    milena(iam_token, id_folder, 'добро пожаловать!, Я ваш голосовой помощник. Отвечайте -- Д+а -- или-Нет')
     dialogue(iam_token, id_folder)
     milena(iam_token, id_folder, 'Бутьте здоровы!, до связи')
     signal('Harp 1.wav')
-
     return tasks_order
 
 
 if __name__ == '__main__':
-    main_dialogue()
-    print(list(tasks_order.values()))
+    tasks_order = main_dialogue()
+    to_json = {'Задачи от Милены': list(tasks_order.values())}
+    with open('tasks_milena.json', 'w') as f:
+        json.dump(to_json, f)
+    with open('tasks_milena.json') as f:
+        print(json.load(f))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
