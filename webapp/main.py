@@ -7,7 +7,7 @@ import simpleaudio as sa
 import speech_recognition as sr
 from pydub import AudioSegment
 
-from сreate_token_copy import create_token, read_config
+from create_token_copy import create_token, read_config
 
 
 REPLIES = OrderedDict([
