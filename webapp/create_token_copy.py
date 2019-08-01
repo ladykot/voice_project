@@ -4,7 +4,7 @@ import logging
 import requests
 
 
-PATH = 'settings.ini'
+PATH = 'webapp/settings.ini'
 URL_REC = "https://stt.api.cloud.yandex.net/speech/v1/stt:recognize"
 URL_SYN = 'https://tts.api.cloud.yandex.net/speech/v1/tts:synthesize'
 

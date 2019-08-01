@@ -7,24 +7,26 @@ import simpleaudio as sa
 import speech_recognition as sr
 from pydub import AudioSegment
 
-from create_token_copy import create_token, read_config
-
+from webapp.create_token_copy import create_token, read_config
+from webapp.model import db, Tasks
 
 REPLIES = OrderedDict([
     ("Болит у вас что-нибудь?", ("доктор принесёт лекарство", "Принести обезболивающее")),
     ("Хотите в туалет?", ("медсестра уже идёт к вам на помощь", "Помочь с туалетом")),
     ("Хотите пить?", ("медсестра позаботится о вас, ожидайте", "Дать питьё")),
     ("Желаете поговорить с родными?", ("я уже решаю этот вопрос", "Найти родных")),
-    ("Продолжим диалог?", ("хорошо, попробуем снова",))
+    ("Продолжим диалог?", ("хорошо, попробуем снова", ))
     ])
 
-tasks_list = [value[1] for value in REPLIES.values() if len(value) == 2]  # список задач по порядку
-tasks_order = OrderedDict([])
+# tasks_list = [value[1] for value in REPLIES.values() if len(value) == 2]  # список задач по порядку
+# tasks_order = OrderedDict([])
+pacient_name = "Самый любимый"
 
 URL_REC = "https://stt.api.cloud.yandex.net/speech/v1/stt:recognize"
 URL_SYN = 'https://tts.api.cloud.yandex.net/speech/v1/tts:synthesize'
 
-logging.basicConfig(filename="sample.log", level=logging.INFO)
+log_format = '[%(asctime)s] %(level)-8s %(name)-12s %(message)s'
+logging.basicConfig(filename="sample.log", format=log_format, level=logging.INFO)
 
 
 def milena(iam_token, id_folder, text):
@@ -123,34 +125,41 @@ def dialogue(iam_token, id_folder):
                     continue
 
             elif recognize_text == 'да':
-                milena(iam_token, id_folder, REPLIES[question][0])  # ответ -- значение по словарю
+                milena(iam_token, id_folder, REPLIES[question][0])  # ответ Милены -- значение по словарю
                 if question == list(REPLIES.items())[-1][0]:
                     continue
-                tasks_order[question] = REPLIES[question][1]
+                task = REPLIES[question][1]
+                save_tasks(pacient_name, task)  # запись задачи в БД
 
 
 def main_dialogue():
     """ Функция разговора пациента с пощником
-
-    :return: tasks_order (dict): {'question': 'task'}
     """
     iam_token = create_token()  # генерируем токен ПЕРЕД диалогом
     id_folder = read_config('id_folder')  # читаем с конфига id_folder
-    signal('Harp 1.wav')
+    signal('webapp/Harp 1.wav')
     milena(iam_token, id_folder, 'добро пожаловать!, Я ваш голосовой помощник. Отвечайте -- Д+а -- или-Нет')
     dialogue(iam_token, id_folder)
     milena(iam_token, id_folder, 'Бутьте здоровы!, до связи')
-    signal('Harp 1.wav')
-    return tasks_order
+    signal('webapp/Harp 1.wav')
+    return f"Задачи для пациента: {pacient_name} успешно отправлены медсестре"
+
+
+def save_tasks(pacient_name, task):
+    """ Функция записи задачи (task) для пациента (pacient_name) в БД
+
+    :param pacient_name (str), task (str)
+    """
+    task_exists = Tasks.query.filter(Tasks.pacient_name == pacient_name, Tasks.task == task).count()
+    if not task_exists:
+        new_task = Tasks(pacient_name=pacient_name, task=task)  # новая задача по модели БД
+        db.session.add(new_task)
+        db.session.commit()  # коммитим после добавления задачи
 
 
 if __name__ == '__main__':
-    tasks_order = main_dialogue()
-    to_json = {'Задачи от Милены': list(tasks_order.values())}
-    with open('tasks_milena.json', 'w') as f:
-        json.dump(to_json, f)
-    with open('tasks_milena.json') as f:
-        print(json.load(f))
+    main_dialogue()
+
 
 
 
