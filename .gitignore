@@ -107,5 +107,13 @@ main_proto.py
 config_token.py
 
 # iam_token settings
-.ini
-settings.py
+*.ini
+
+# data base settings
+config.py
+*.db
+
+.DS_Store
+
+.idea/
+
