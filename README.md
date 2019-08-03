@@ -7,12 +7,12 @@
 для общения с больными.
 
 Для использования Милены необходим сервисный аккаунт на Yandex.
-Подробная документация по работе в облаке: [docs/speechkit](https://cloud.yandex.ru/docs/speechkit/)
+Подробная документация по работе в облаке: [speechkit/quickstart](https://cloud.yandex.ru/docs/speechkit/quickstart)
 
 Использованы технологии:
 ------------------------
 - Yandex Speech Kit (распознавание и синтез)
-- SQLAlchemy(для список задач)
+- SQLAlchemy (для список задач)
 - Speech Recognition (получение ответа от пациента 
     через микрофон в аудио)
 - Flask (интерфейс медсестры)
