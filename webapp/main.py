@@ -10,6 +10,7 @@ from pydub import AudioSegment
 from webapp.create_token_copy import create_token, read_config
 from webapp.model import db, Tasks
 
+
 REPLIES = OrderedDict([
     ("Болит у вас что-нибудь?", ("доктор принесёт лекарство", "Принести обезболивающее")),
     ("Хотите в туалет?", ("медсестра уже идёт к вам на помощь", "Помочь с туалетом")),
@@ -18,9 +19,7 @@ REPLIES = OrderedDict([
     ("Продолжим диалог?", ("хорошо, попробуем снова", ))
     ])
 
-# tasks_list = [value[1] for value in REPLIES.values() if len(value) == 2]  # список задач по порядку
-# tasks_order = OrderedDict([])
-pacient_name = "Самый любимый"
+patient_name = "Самый любимый"
 
 URL_REC = "https://stt.api.cloud.yandex.net/speech/v1/stt:recognize"
 URL_SYN = 'https://tts.api.cloud.yandex.net/speech/v1/tts:synthesize'
@@ -129,32 +128,41 @@ def dialogue(iam_token, id_folder):
                 if question == list(REPLIES.items())[-1][0]:
                     continue
                 task = REPLIES[question][1]
-                save_tasks(pacient_name, task)  # запись задачи в БД
+                save_tasks(patient_name, task)  # запись задачи в БД
 
 
 def main_dialogue():
-    """ Функция разговора пациента с пощником
+    """ Функция активации помощника, разговора и обработки
+    ответов пациента
+
+    create_token() - проверка и геренерация токена
+    read_config() - чтение данных из .ini
+    milena() - синтез речи Милены через api YSpeech Kit
+    dialogue() - разговор с пациентом, распознавание ответов через api, запись в БД
+    signal() - воспроизведение аудио
     """
-    iam_token = create_token()  # генерируем токен ПЕРЕД диалогом
-    id_folder = read_config('id_folder')  # читаем с конфига id_folder
+
+    iam_token = create_token()
+    id_folder = read_config('id_folder')
     signal('webapp/Harp 1.wav')
-    milena(iam_token, id_folder, 'добро пожаловать!, Я ваш голосовой помощник. Отвечайте -- Д+а -- или-Нет')
+    milena(iam_token, id_folder, 'добро пожаловать!, '
+                                 'Я ваш голосовой помощник. Отвечайте -- Д+а -- или-Нет')
     dialogue(iam_token, id_folder)
     milena(iam_token, id_folder, 'Бутьте здоровы!, до связи')
     signal('webapp/Harp 1.wav')
-    return f"Задачи для пациента: {pacient_name} успешно отправлены медсестре"
+    return f"Задачи для пациента: {patient_name} успешно отправлены медсестре"
 
 
-def save_tasks(pacient_name, task):
-    """ Функция записи задачи (task) для пациента (pacient_name) в БД
+def save_tasks(patient_name, task):
+    """ Функция записи задачи (task) для пациента (patient_name) в БД
 
-    :param pacient_name (str), task (str)
+    :param patient_name (str), task (str)
     """
-    task_exists = Tasks.query.filter(Tasks.pacient_name == pacient_name, Tasks.task == task).count()
+    task_exists = Tasks.query.filter(Tasks.pacient_name == patient_name, Tasks.task == task).count()
     if not task_exists:
-        new_task = Tasks(pacient_name=pacient_name, task=task)  # новая задача по модели БД
+        new_task = Tasks(patient_name=patient_name, task=task)  # новая задача по модели БД
         db.session.add(new_task)
-        db.session.commit()  # коммитим после добавления задачи
+        db.session.commit()
 
 
 if __name__ == '__main__':

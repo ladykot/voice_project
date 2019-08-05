@@ -11,7 +11,6 @@ def create_app():
     def index():
         title = 'Список дел от Милены'
         tasks_milena = Tasks.query.with_entities(Tasks.task).all()
-
         return render_template("index.html", page_title=title, tasks_milena_list=tasks_milena)
 
     return app
