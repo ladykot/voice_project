@@ -128,7 +128,7 @@ def dialogue(iam_token, id_folder):
                 if question == list(REPLIES.items())[-1][0]:
                     continue
                 task = REPLIES[question][1]
-                save_tasks(patient_name, task)  # запись задачи в БД
+                save_tasks(task)  # запись задачи в БД
 
 
 def main_dialogue():
@@ -153,10 +153,10 @@ def main_dialogue():
     return f"Задачи для пациента: {patient_name} успешно отправлены медсестре"
 
 
-def save_tasks(patient_name, task):
+def save_tasks(task):
     """ Функция записи задачи (task) для пациента (patient_name) в БД
 
-    :param patient_name (str), task (str)
+    :param task: (str)
     """
     task_exists = Tasks.query.filter(Tasks.pacient_name == patient_name, Tasks.task == task).count()
     if not task_exists:
